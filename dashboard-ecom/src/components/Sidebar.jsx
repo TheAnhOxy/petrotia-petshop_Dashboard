@@ -13,6 +13,7 @@ import {
   HiChevronRight,
   HiChartBar, // thêm icon cho Statistics
 } from "react-icons/hi";
+import { HiNewspaper } from "react-icons/hi";
 
 function Sidebar({ darkMode, onItemClick }) {
   const [openSections, setOpenSections] = useState({
@@ -232,6 +233,19 @@ function Sidebar({ darkMode, onItemClick }) {
             )}
           </div>
 
+          {/* Articles */}
+          <button
+            onClick={() => onItemClick && onItemClick("articles")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+              darkMode
+                ? "hover:bg-gray-800 text-gray-300 hover:text-white"
+                : "hover:bg-[#f5d7b7] text-gray-700 hover:text-[#7b4f35]"
+            }`}
+          >
+            <HiNewspaper className="h-5 w-5" />
+            <span className="font-medium">Articles</span>
+          </button>
+
           {/* Settings */}
           <button
             onClick={() => onItemClick && onItemClick("settings")}
@@ -256,28 +270,6 @@ function Sidebar({ darkMode, onItemClick }) {
           >
             <HiLockClosed className="h-5 w-5" />
             <span className="font-medium">Pages</span>
-          </button>
-
-          {/* Playground */}
-          <button
-            onClick={() => onItemClick && onItemClick("playground")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-              darkMode
-                ? "hover:bg-gray-800 text-gray-300 hover:text-white"
-                : "hover:bg-[#f5d7b7] text-gray-700 hover:text-[#7b4f35]"
-            }`}
-          >
-            <HiPlay className="h-5 w-5" />
-            <span className="font-medium">Playground</span>
-          </button>
-
-          {/* View Pro Version */}
-          <button
-            onClick={() => onItemClick && onItemClick("view-pro")}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-[#7b4f35] text-white hover:bg-[#6a4330] transition-all"
-          >
-            <HiEye className="h-5 w-5" />
-            <span className="font-medium">View Pro Version</span>
           </button>
         </nav>
       </div>

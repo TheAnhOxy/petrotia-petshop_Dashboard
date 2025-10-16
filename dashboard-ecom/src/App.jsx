@@ -16,6 +16,7 @@ import Profile from "./components/Profile";
 import RevenueStatistics from "./components/RevenueStatistics";
 import PetStatistics from "./components/PetStatistics";
 import Dashboard from "./components/Dashboard";
+import ArticleManager from "./components/ArticleManager";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -48,6 +49,8 @@ function App() {
         return <RevenueStatistics />;
       case "pet-statistics":
         return <PetStatistics />;
+      case "articles":
+        return <ArticleManager />;
 
       case "invoices":
         return (
@@ -80,10 +83,6 @@ function App() {
         return <Profile />;
       case "pages":
         return <div>Pages</div>;
-      case "playground":
-        return <div>Playground</div>;
-      case "view-pro":
-        return <div>View Pro Version</div>;
       default:
         return null;
     }
