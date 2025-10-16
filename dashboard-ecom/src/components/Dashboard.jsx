@@ -13,6 +13,8 @@ import {
   FaBox,
   FaClipboardList,
   FaArrowRight,
+  FaComment,
+  FaHeart,
 } from "react-icons/fa";
 
 /* ---------------------------
@@ -32,7 +34,7 @@ const StatCard = ({ icon, label, value, delta, color, darkMode }) => (
     >
       {React.cloneElement(icon, { style: { color, fontSize: 22 } })}
     </div>
-    <div className="flex-1">
+    <div className="flex-1 min-w-0">
       <p
         className={`text-sm font-medium ${
           darkMode ? "text-slate-400" : "text-slate-500"
@@ -40,7 +42,7 @@ const StatCard = ({ icon, label, value, delta, color, darkMode }) => (
       >
         {label}
       </p>
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-center gap-2 flex-wrap">
         <p
           className={`text-2xl font-bold ${
             darkMode ? "text-white" : "text-slate-900"
@@ -49,7 +51,7 @@ const StatCard = ({ icon, label, value, delta, color, darkMode }) => (
           {value}
         </p>
         {delta && (
-          <span className="text-sm font-semibold bg-green-500/20 text-green-500 py-1 px-2 rounded-md">
+          <span className="text-xs font-semibold bg-green-500/20 text-green-500 py-1 px-2 rounded-md whitespace-nowrap">
             {delta}
           </span>
         )}
@@ -108,6 +110,33 @@ const FeaturedCard = ({ name, image, sold, darkMode }) => (
     <button className="text-orange-500 hover:text-orange-600 text-sm font-semibold flex items-center">
       Xem <FaArrowRight className="ml-1" />
     </button>
+  </div>
+);
+
+// Interaction notification item
+const InteractionItem = ({ user, avatar, petName, action, time, darkMode }) => (
+  <div
+    className={`flex items-start space-x-3 p-3 rounded-lg transition-colors ${
+      darkMode
+        ? "hover:bg-slate-700/50 border-b border-slate-700"
+        : "hover:bg-gray-50 border-b border-gray-100"
+    }`}
+  >
+    <img
+      src={avatar}
+      alt={user}
+      className="w-10 h-10 rounded-full border-2 border-orange-300"
+    />
+    <div className="flex-1">
+      <p className={`text-sm ${darkMode ? "text-white" : "text-slate-900"}`}>
+        <span className="font-semibold">{user}</span>{" "}
+        <span className={darkMode ? "text-slate-400" : "text-slate-600"}>
+          {action}
+        </span>{" "}
+        <span className="font-medium text-orange-500">"{petName}"</span>
+      </p>
+      <p className="text-xs opacity-60 mt-1">{time}</p>
+    </div>
   </div>
 );
 
@@ -251,7 +280,7 @@ export default function Dashboard({ darkMode = false }) {
       </div>
 
       {/* MINI STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-6">
         <StatCard
           icon={<FaPaw />}
           label="Thú cưng mới"
@@ -274,6 +303,14 @@ export default function Dashboard({ darkMode = false }) {
           value="$52.4K"
           delta="+8.6%"
           color="#3b82f6"
+          darkMode={darkMode}
+        />
+        <StatCard
+          icon={<FaComment />}
+          label="Bình luận mới"
+          value="34"
+          delta="+18%"
+          color="#ec4899"
           darkMode={darkMode}
         />
         <StatCard
@@ -437,6 +474,168 @@ export default function Dashboard({ darkMode = false }) {
               sold={26}
               darkMode={darkMode}
             />
+          </div>
+        </div>
+      </div>
+
+      {/* USER INTERACTIONS & NOTIFICATIONS */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+        {/* Bình luận và tương tác */}
+        <div
+          className={`p-6 rounded-2xl shadow-lg ${
+            darkMode ? "bg-slate-800" : "bg-white"
+          }`}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-bold flex items-center">
+                <FaComment className="mr-2 text-pink-500" />
+                Tương tác gần đây
+              </h3>
+              <p className="text-sm opacity-70">Bình luận & yêu thích</p>
+            </div>
+            <button className="text-sm text-orange-500 hover:text-orange-600 font-semibold">
+              Xem tất cả
+            </button>
+          </div>
+
+          <div className="space-y-1">
+            <InteractionItem
+              user="Mai Anh"
+              avatar="https://i.pravatar.cc/100?img=1"
+              petName="Milo The Corgi"
+              action="đã bình luận:"
+              time="2 phút trước"
+              darkMode={darkMode}
+            />
+            <InteractionItem
+              user="Tuấn Kiệt"
+              avatar="https://i.pravatar.cc/100?img=2"
+              petName="Bé Miu"
+              action="đã yêu thích"
+              time="10 phút trước"
+              darkMode={darkMode}
+            />
+            <InteractionItem
+              user="Hương Ly"
+              avatar="https://i.pravatar.cc/100?img=3"
+              petName="Golden Retriever"
+              action="đã bình luận:"
+              time="25 phút trước"
+              darkMode={darkMode}
+            />
+            <InteractionItem
+              user="Đức Minh"
+              avatar="https://i.pravatar.cc/100?img=4"
+              petName="Mèo Ba Tư"
+              action="đã bình luận:"
+              time="1 giờ trước"
+              darkMode={darkMode}
+            />
+            <InteractionItem
+              user="Thảo Nguyên"
+              avatar="https://i.pravatar.cc/100?img=5"
+              petName="Dầu gội PetCare"
+              action="đã yêu thích"
+              time="2 giờ trước"
+              darkMode={darkMode}
+            />
+          </div>
+        </div>
+
+        {/* Thông báo quan tâm */}
+        <div
+          className={`p-6 rounded-2xl shadow-lg ${
+            darkMode ? "bg-slate-800" : "bg-white"
+          }`}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-bold flex items-center">
+                <FaHeart className="mr-2 text-red-500" />
+                Thống kê yêu thích
+              </h3>
+              <p className="text-sm opacity-70">Người dùng quan tâm nhất</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {/* Top liked pets */}
+            <div
+              className={`p-4 rounded-lg ${
+                darkMode ? "bg-slate-700/50" : "bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold">Milo The Corgi</span>
+                <span className="text-red-500 flex items-center">
+                  <FaHeart className="mr-1" /> 156
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-red-500 h-2 rounded-full"
+                  style={{ width: "78%" }}
+                />
+              </div>
+            </div>
+
+            <div
+              className={`p-4 rounded-lg ${
+                darkMode ? "bg-slate-700/50" : "bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold">Bé Miu</span>
+                <span className="text-red-500 flex items-center">
+                  <FaHeart className="mr-1" /> 142
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-red-500 h-2 rounded-full"
+                  style={{ width: "71%" }}
+                />
+              </div>
+            </div>
+
+            <div
+              className={`p-4 rounded-lg ${
+                darkMode ? "bg-slate-700/50" : "bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold">Golden Retriever</span>
+                <span className="text-red-500 flex items-center">
+                  <FaHeart className="mr-1" /> 128
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-red-500 h-2 rounded-full"
+                  style={{ width: "64%" }}
+                />
+              </div>
+            </div>
+
+            <div
+              className={`p-4 rounded-lg ${
+                darkMode ? "bg-slate-700/50" : "bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold">Dầu gội PetCare</span>
+                <span className="text-red-500 flex items-center">
+                  <FaHeart className="mr-1" /> 98
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-red-500 h-2 rounded-full"
+                  style={{ width: "49%" }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

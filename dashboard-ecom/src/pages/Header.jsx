@@ -2,6 +2,7 @@
 
 import { HiBell, HiSearch, HiMoon, HiSun } from "react-icons/hi";
 import { useState } from "react";
+import logo from "../assets/image.png";
 
 const notifications = [
   {
@@ -47,11 +48,11 @@ function Header({ darkMode, setDarkMode }) {
         {/* Logo and Brand */}
         <div className="flex items-center gap-3">
           <img
-            src="https://flowbite.com/docs/images/logo.svg"
-            className="h-8"
+            src={logo}
+            className="h-12 w-12 rounded-full object-cover"
             alt="Logo"
           />
-          <span className="text-xl font-bold text-white">Flowbite</span>
+          <span className="text-2xl font-bold text-white">Petpetopia</span>
         </div>
 
         {/* Search Bar */}

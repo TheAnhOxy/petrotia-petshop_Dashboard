@@ -13,7 +13,16 @@ import {
   HiClock,
   HiCheck,
 } from "react-icons/hi";
-import { FaChevronLeft, FaChevronRight, FaSyringe } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaSyringe,
+  FaStar,
+  FaReply,
+  FaThumbtack,
+  FaEdit,
+  FaHeart, // Added for like functionality
+} from "react-icons/fa";
 
 // Fake dữ liệu 25 thú cưng
 const breeds = [
@@ -122,6 +131,55 @@ const allVaccinationSchedules = allPets.flatMap((pet) =>
   generateVaccinationSchedule(pet.id)
 );
 
+const generateReviews = (petId) => {
+  const reviewCount = Math.floor(Math.random() * 8) + 1;
+  const reviews = [];
+  const customerNames = [
+    "Nguyễn An",
+    "Trần Bình",
+    "Lê Cường",
+    "Phạm Dung",
+    "Hoàng Minh",
+    "Võ Lan",
+  ];
+  const reviewTexts = [
+    "Thú cưng rất đáng yêu và khỏe mạnh!",
+    "Dịch vụ tuyệt vời, nhân viên nhiệt tình",
+    "Rất hài lòng với chất lượng chăm sóc",
+    "Thú cưng của tôi rất thích ở đây",
+    "Giá cả hợp lý, dịch vụ chuyên nghiệp",
+    "Sẽ quay lại lần sau",
+  ];
+
+  for (let i = 0; i < reviewCount; i++) {
+    const review = {
+      id: `R${petId}-${i + 1}`,
+      petId,
+      customerName: customerNames[i % customerNames.length],
+      rating: Math.floor(Math.random() * 2) + 4,
+      comment: reviewTexts[i % reviewTexts.length],
+      date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+      isPinned: i === 0 && Math.random() > 0.5,
+      adminReply:
+        i % 3 === 0
+          ? {
+              text: "Cảm ơn bạn đã tin tưởng dịch vụ của chúng tôi!",
+              date: new Date(
+                Date.now() - Math.random() * 20 * 24 * 60 * 60 * 1000
+              ),
+            }
+          : null,
+      // Added 'liked' and 'likes' for review likes functionality
+      liked: Math.random() > 0.7,
+      likes: Math.floor(Math.random() * 100),
+    };
+    reviews.push(review);
+  }
+  return reviews.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+};
+
+const allReviews = allPets.flatMap((pet) => generateReviews(pet.id));
+
 export default function PetServiceManagement() {
   const [activeTab, setActiveTab] = useState("pets");
   const [selectedPets, setSelectedPets] = useState([]);
@@ -147,8 +205,13 @@ export default function PetServiceManagement() {
   const [vaccinationDateFrom, setVaccinationDateFrom] = useState("");
   const [vaccinationDateTo, setVaccinationDateTo] = useState("");
 
+  const [reviewPetSearch, setReviewPetSearch] = useState("");
+  const [reviewStatusFilter, setReviewStatusFilter] = useState("all"); // all, reviewed, unreviewed
+  const [reviewPage, setReviewPage] = useState(1);
+  const reviewsPerPage = 5;
+
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("add");
+  const [modalMode, setModalMode] = useState("add"); // Added: modalMode state
   const [expandedItems, setExpandedItems] = useState({});
   const [page, setPage] = useState(1);
   const perPage = 10;
@@ -209,13 +272,20 @@ export default function PetServiceManagement() {
     status: "ACTIVE",
   });
 
+  const [reviews, setReviews] = useState(allReviews);
+  const [selectedPetForReviews, setSelectedPetForReviews] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [editingReplyId, setEditingReplyId] = useState(null);
+
   // Quản lý scroll của body khi modal mở/đóng
   useEffect(() => {
     if (
       modalOpen ||
       showEmailModal ||
       showVaccinationModal ||
-      showBulkScheduleModal
+      showBulkScheduleModal ||
+      showReviewModal
     ) {
       const scrollY = window.scrollY;
       document.body.style.position = "fixed";
@@ -239,7 +309,13 @@ export default function PetServiceManagement() {
       document.body.style.width = "";
       document.body.style.overflow = "";
     };
-  }, [modalOpen, showEmailModal, showVaccinationModal, showBulkScheduleModal]);
+  }, [
+    modalOpen,
+    showEmailModal,
+    showVaccinationModal,
+    showBulkScheduleModal,
+    showReviewModal,
+  ]);
 
   // Lọc thú cưng
   const filteredPets = allPets.filter((p) => {
@@ -288,12 +364,18 @@ export default function PetServiceManagement() {
   });
 
   // Phân trang
+  const getPetReviews = (petId) => {
+    return reviews.filter((r) => r.petId === petId);
+  };
+
   const currentData =
     activeTab === "pets"
       ? filteredPets
       : activeTab === "services"
       ? filteredServices
-      : filteredVaccinationSchedules;
+      : activeTab === "vaccination"
+      ? filteredVaccinationSchedules
+      : getPetReviews(selectedPetForReviews?.id || -1);
   const totalPages = Math.ceil(currentData.length / perPage);
   const paginatedData = currentData.slice((page - 1) * perPage, page * perPage);
 
@@ -307,8 +389,12 @@ export default function PetServiceManagement() {
       else if (key === "status") setVaccinationStatusFilter(value);
       else if (key === "dateFrom") setVaccinationDateFrom(value);
       else if (key === "dateTo") setVaccinationDateTo(value);
+    } else if (activeTab === "reviews") {
+      if (key === "search") setReviewPetSearch(value);
+      else if (key === "status") setReviewStatusFilter(value);
     }
     setPage(1);
+    setReviewPage(1); // Reset review pagination when filters change
   };
 
   const handleSelectItem = (id) => {
@@ -589,6 +675,67 @@ export default function PetServiceManagement() {
     return vaccinationSchedules.filter((s) => s.petId === petId);
   };
 
+  const handlePinReview = (reviewId) => {
+    setReviews((prev) =>
+      prev.map((r) => (r.id === reviewId ? { ...r, isPinned: !r.isPinned } : r))
+    );
+  };
+
+  const handleLikeReview = (reviewId) => {
+    setReviews((prev) =>
+      prev.map((r) =>
+        r.id === reviewId
+          ? {
+              ...r,
+              liked: !r.liked,
+              likes: (r.likes || 0) + (r.liked ? -1 : 1),
+            }
+          : r
+      )
+    );
+  };
+
+  const handleDeleteReview = (reviewId) => {
+    if (confirm("Bạn có chắc muốn xóa đánh giá này?")) {
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    }
+  };
+
+  const handleAddReply = (reviewId) => {
+    if (!replyText.trim()) {
+      alert("Vui lòng nhập nội dung trả lời!");
+      return;
+    }
+    setReviews((prev) =>
+      prev.map((r) =>
+        r.id === reviewId
+          ? { ...r, adminReply: { text: replyText, date: new Date() } }
+          : r
+      )
+    );
+    setReplyText("");
+    setEditingReplyId(null);
+  };
+
+  const handleEditReply = (reviewId, newText) => {
+    setReviews((prev) =>
+      prev.map((r) =>
+        r.id === reviewId && r.adminReply
+          ? { ...r, adminReply: { ...r.adminReply, text: newText } }
+          : r
+      )
+    );
+    setEditingReplyId(null);
+  };
+
+  const handleDeleteReply = (reviewId) => {
+    if (confirm("Bạn có chắc muốn xóa phản hồi này?")) {
+      setReviews((prev) =>
+        prev.map((r) => (r.id === reviewId ? { ...r, adminReply: null } : r))
+      );
+    }
+  };
+
   const petStats = [
     {
       title: "Tổng Thú Cưng",
@@ -696,12 +843,50 @@ export default function PetServiceManagement() {
     },
   ];
 
+  // Added review stats
+  const reviewStats = [
+    {
+      title: "Tổng Đánh Giá",
+      value: reviews.length,
+      icon: "⭐",
+      gradient: "from-yellow-50 to-amber-100",
+      textColor: "text-yellow-700",
+      iconBg: "bg-yellow-200",
+    },
+    {
+      title: "Đánh Giá 5 Sao",
+      value: reviews.filter((r) => r.rating === 5).length,
+      icon: "🌟",
+      gradient: "from-green-50 to-green-100",
+      textColor: "text-green-700",
+      iconBg: "bg-green-200",
+    },
+    {
+      title: "Đã Ghim",
+      value: reviews.filter((r) => r.isPinned).length,
+      icon: "📌",
+      gradient: "from-blue-50 to-blue-100",
+      textColor: "text-blue-700",
+      iconBg: "bg-blue-200",
+    },
+    {
+      title: "Đã Trả Lời",
+      value: reviews.filter((r) => r.adminReply).length,
+      icon: "💬",
+      gradient: "from-purple-50 to-purple-100",
+      textColor: "text-purple-700",
+      iconBg: "bg-purple-200",
+    },
+  ];
+
   const stats =
     activeTab === "pets"
       ? petStats
       : activeTab === "services"
       ? serviceStats
-      : vaccinationStats;
+      : activeTab === "vaccination"
+      ? vaccinationStats
+      : reviewStats;
 
   const Calendar = ({ onDateSelect, selectedDates }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -878,6 +1063,19 @@ export default function PetServiceManagement() {
         >
           💉 Lịch Tiêm Phòng
         </button>
+        <button
+          onClick={() => {
+            setActiveTab("reviews");
+            setPage(1);
+          }}
+          className={`relative flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all duration-300 ${
+            activeTab === "reviews"
+              ? "bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-md tab-button-active"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 tab-button-inactive"
+          }`}
+        >
+          ⭐ Đánh Giá
+        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -903,7 +1101,463 @@ export default function PetServiceManagement() {
         ))}
       </div>
 
-      {activeTab === "vaccination" ? (
+      {activeTab === "reviews" ? (
+        <>
+          <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Tìm kiếm thú cưng
+                </label>
+                <input
+                  type="text"
+                  value={reviewPetSearch}
+                  onChange={(e) => {
+                    setReviewPetSearch(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="Nhập tên thú cưng..."
+                  className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Lọc theo trạng thái
+                </label>
+                <select
+                  value={reviewStatusFilter}
+                  onChange={(e) => {
+                    setReviewStatusFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  className="w-full p-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all cursor-pointer"
+                >
+                  <option value="all">Tất cả</option>
+                  <option value="reviewed">Đã đánh giá</option>
+                  <option value="unreviewed">Chưa đánh giá</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {allPets
+              .filter((pet) => {
+                const petReviews = getPetReviews(pet.id);
+                const matchesSearch = pet.name
+                  .toLowerCase()
+                  .includes(reviewPetSearch.toLowerCase());
+                const matchesStatus =
+                  reviewStatusFilter === "all" ||
+                  (reviewStatusFilter === "reviewed" &&
+                    petReviews.length > 0) ||
+                  (reviewStatusFilter === "unreviewed" &&
+                    petReviews.length === 0);
+                return matchesSearch && matchesStatus;
+              })
+              .slice((page - 1) * perPage, page * perPage)
+              .map((pet) => {
+                const petReviews = getPetReviews(pet.id);
+                const avgRating =
+                  petReviews.length > 0
+                    ? (
+                        petReviews.reduce((sum, r) => sum + r.rating, 0) /
+                        petReviews.length
+                      ).toFixed(1)
+                    : 0;
+
+                return (
+                  <div
+                    key={pet.id}
+                    onClick={() => {
+                      setSelectedPetForReviews(pet);
+                      setShowReviewModal(true);
+                      setReviewPage(1); // Reset review pagination when opening modal
+                    }}
+                    className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 border-2 border-gray-200 hover:border-yellow-400 hover:scale-105 cursor-pointer group"
+                  >
+                    <div className="relative">
+                      <img
+                        src={
+                          pet.images[0] ||
+                          "/placeholder.svg?height=200&width=200"
+                        }
+                        alt={pet.name}
+                        className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-lg">
+                        <FaStar className="text-xs" />
+                        {avgRating}
+                      </div>
+                      {petReviews.length > 0 && (
+                        <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-bold text-gray-700 flex items-center gap-1">
+                          💬 {petReviews.length}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4">
+                      <h3 className="font-bold text-gray-800 text-lg mb-1">
+                        {pet.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {pet.breed} • {pet.category}
+                      </p>
+                      <div className="flex items-center gap-1 text-yellow-500">
+                        {[...Array(5)].map((_, i) => (
+                          <FaStar
+                            key={i}
+                            className={`text-sm ${
+                              i < Math.round(avgRating)
+                                ? "fill-current"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+
+          {/* Review Modal */}
+          {showReviewModal && selectedPetForReviews && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 animate-fadeIn z-50">
+              <div
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+                onClick={() => {
+                  setShowReviewModal(false);
+                  setSelectedPetForReviews(null);
+                  setReplyText("");
+                  setEditingReplyId(null);
+                  setReviewPage(1); // Reset pagination on close
+                }}
+              ></div>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl z-50 relative animate-slideUp border border-gray-200 max-h-[90vh] overflow-y-auto">
+                <div className="sticky top-0 bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-6 rounded-t-2xl flex justify-between items-center z-10 shadow-lg">
+                  <div>
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      <FaStar className="text-3xl" />
+                      Đánh giá - {selectedPetForReviews.name}
+                    </h2>
+                    <div className="flex items-center gap-4 mt-2">
+                      <p className="text-white/90">
+                        {getPetReviews(selectedPetForReviews.id).length} đánh
+                        giá
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowReviewModal(false);
+                      setSelectedPetForReviews(null);
+                      setReplyText("");
+                      setEditingReplyId(null);
+                      setReviewPage(1); // Reset pagination on close
+                    }}
+                    className="text-white hover:bg-white hover:text-yellow-600 rounded-full p-2 transition-all duration-300"
+                  >
+                    <HiX className="text-2xl" />
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  {getPetReviews(selectedPetForReviews.id).length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <FaStar className="text-6xl mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-semibold">
+                        Chưa có đánh giá nào
+                      </p>
+                      <p className="text-sm">
+                        Hãy là người đầu tiên đánh giá thú cưng này!
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {getPetReviews(selectedPetForReviews.id)
+                        .slice(
+                          (reviewPage - 1) * reviewsPerPage,
+                          reviewPage * reviewsPerPage
+                        )
+                        .map((review) => (
+                          <div
+                            key={review.id}
+                            className={`p-5 rounded-xl border-2 transition-all ${
+                              review.isPinned
+                                ? "bg-yellow-50 border-yellow-400 shadow-md"
+                                : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center text-white font-bold text-lg">
+                                  {review.customerName.charAt(0)}
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                                    {review.customerName}
+                                    {review.isPinned && (
+                                      <FaThumbtack className="text-yellow-600 text-sm" />
+                                    )}
+                                  </h4>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1 text-yellow-500">
+                                      {[...Array(5)].map((_, i) => (
+                                        <FaStar
+                                          key={i}
+                                          className={`text-xs ${
+                                            i < review.rating
+                                              ? "fill-current"
+                                              : "text-gray-300"
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="text-xs text-gray-500">
+                                      {review.date.toLocaleDateString("vi-VN")}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleLikeReview(review.id)}
+                                  className={`p-2 rounded-lg transition-all hover:scale-110 flex items-center gap-1 ${
+                                    review.liked
+                                      ? "bg-red-100 text-red-600"
+                                      : "bg-gray-200 text-gray-600 hover:bg-red-50"
+                                  }`}
+                                  title={review.liked ? "Bỏ thích" : "Thích"}
+                                >
+                                  <FaHeart
+                                    className={`text-sm ${
+                                      review.liked ? "fill-current" : ""
+                                    }`}
+                                  />
+                                  {(review.likes || 0) > 0 && (
+                                    <span className="text-xs font-semibold">
+                                      {review.likes}
+                                    </span>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handlePinReview(review.id)}
+                                  className={`p-2 rounded-lg transition-all hover:scale-110 ${
+                                    review.isPinned
+                                      ? "bg-yellow-500 text-white"
+                                      : "bg-gray-200 text-gray-600 hover:bg-yellow-100"
+                                  }`}
+                                  title={
+                                    review.isPinned
+                                      ? "Bỏ ghim"
+                                      : "Ghim đánh giá"
+                                  }
+                                >
+                                  <FaThumbtack className="text-sm" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteReview(review.id)}
+                                  className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-all hover:scale-110"
+                                  title="Xóa đánh giá"
+                                >
+                                  <HiTrash className="text-sm" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <p className="text-gray-700 mb-3 leading-relaxed">
+                              {review.comment}
+                            </p>
+
+                            {review.adminReply && (
+                              <div className="ml-8 mt-3 p-4 bg-teal-50 border-l-4 border-teal-500 rounded-lg">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center text-white font-bold text-sm">
+                                      A
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-teal-700 text-sm">
+                                        Admin
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {review.adminReply.date.toLocaleDateString(
+                                          "vi-VN"
+                                        )}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => {
+                                        setEditingReplyId(review.id);
+                                        setReplyText(review.adminReply.text);
+                                      }}
+                                      className="p-1.5 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition-all hover:scale-110"
+                                      title="Sửa phản hồi"
+                                    >
+                                      <FaEdit className="text-xs" />
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        handleDeleteReply(review.id)
+                                      }
+                                      className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-all hover:scale-110"
+                                      title="Xóa phản hồi"
+                                    >
+                                      <HiTrash className="text-xs" />
+                                    </button>
+                                  </div>
+                                </div>
+                                {editingReplyId === review.id ? (
+                                  <div className="space-y-2">
+                                    <textarea
+                                      value={replyText}
+                                      onChange={(e) =>
+                                        setReplyText(e.target.value)
+                                      }
+                                      className="w-full p-2 border-2 border-teal-300 rounded-lg text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                                      rows="2"
+                                    />
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() =>
+                                          handleEditReply(review.id, replyText)
+                                        }
+                                        className="px-3 py-1 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700 transition-all"
+                                      >
+                                        Lưu
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setEditingReplyId(null);
+                                          setReplyText("");
+                                        }}
+                                        className="px-3 py-1 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400 transition-all"
+                                      >
+                                        Hủy
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-gray-700 text-sm leading-relaxed">
+                                    {review.adminReply.text}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {!review.adminReply &&
+                              editingReplyId !== review.id && (
+                                <button
+                                  onClick={() => setEditingReplyId(review.id)}
+                                  className="mt-3 ml-8 flex items-center gap-2 text-teal-600 hover:text-teal-700 font-semibold text-sm transition-all hover:gap-3"
+                                >
+                                  <FaReply className="text-sm" />
+                                  Trả lời
+                                </button>
+                              )}
+
+                            {editingReplyId === review.id &&
+                              !review.adminReply && (
+                                <div className="ml-8 mt-3 space-y-2">
+                                  <textarea
+                                    value={replyText}
+                                    onChange={(e) =>
+                                      setReplyText(e.target.value)
+                                    }
+                                    className="w-full p-3 border-2 border-teal-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                                    rows="3"
+                                    placeholder="Nhập phản hồi của bạn..."
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleAddReply(review.id)}
+                                      className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold"
+                                    >
+                                      Gửi phản hồi
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingReplyId(null);
+                                        setReplyText("");
+                                      }}
+                                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all"
+                                    >
+                                      Hủy
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                          </div>
+                        ))}
+
+                      {getPetReviews(selectedPetForReviews.id).length >
+                        reviewsPerPage && (
+                        <div className="flex justify-center items-center gap-4 pt-4 border-t border-gray-200">
+                          <button
+                            onClick={() =>
+                              setReviewPage((p) => Math.max(1, p - 1))
+                            }
+                            disabled={reviewPage === 1}
+                            className={`p-2 rounded-xl font-semibold transition-all duration-300 ${
+                              reviewPage === 1
+                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                : "bg-yellow-500 hover:bg-yellow-600 text-white hover:scale-105"
+                            }`}
+                          >
+                            <FaChevronLeft />
+                          </button>
+                          <span className="text-gray-700 dark:text-gray-300 font-semibold px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-xl">
+                            Trang {reviewPage} /{" "}
+                            {Math.ceil(
+                              getPetReviews(selectedPetForReviews.id).length /
+                                reviewsPerPage
+                            )}
+                          </span>
+                          <button
+                            onClick={() =>
+                              setReviewPage((p) =>
+                                Math.min(
+                                  Math.ceil(
+                                    getPetReviews(selectedPetForReviews.id)
+                                      .length / reviewsPerPage
+                                  ),
+                                  p + 1
+                                )
+                              )
+                            }
+                            disabled={
+                              reviewPage ===
+                              Math.ceil(
+                                getPetReviews(selectedPetForReviews.id).length /
+                                  reviewsPerPage
+                              )
+                            }
+                            className={`p-2 rounded-xl font-semibold transition-all duration-300 ${
+                              reviewPage ===
+                              Math.ceil(
+                                getPetReviews(selectedPetForReviews.id).length /
+                                  reviewsPerPage
+                              )
+                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                : "bg-yellow-500 hover:bg-yellow-600 text-white hover:scale-105"
+                            }`}
+                          >
+                            <FaChevronRight />
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : activeTab === "vaccination" ? (
         <>
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200">
             <div className="flex gap-3">
@@ -985,7 +1639,8 @@ export default function PetServiceManagement() {
                       <img
                         src={
                           pet.images[0] ||
-                          "/placeholder.svg?height=200&width=200"
+                          "/placeholder.svg?height=200&width=200" ||
+                          "/placeholder.svg"
                         }
                         alt={pet.name}
                         className="w-full h-48 object-cover"
@@ -1597,7 +2252,7 @@ export default function PetServiceManagement() {
             </div>
           </div>
 
-          <div className="flex justify-center items-center gap-4">
+          <div className="flex justify-center items-center gap-4 mt-6">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
@@ -1610,13 +2265,24 @@ export default function PetServiceManagement() {
               <FaChevronLeft />
             </button>
             <span className="text-gray-700 dark:text-gray-300 font-semibold px-4 py-2 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200">
-              Trang {page} / {totalPages}
+              Trang {page} / {Math.ceil(paginatedData.length / perPage) || 1}
             </span>
             <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
+              onClick={() =>
+                setPage((p) =>
+                  Math.min(
+                    Math.ceil(paginatedData.length / perPage) || 1,
+                    p + 1
+                  )
+                )
+              }
+              disabled={
+                page === Math.ceil(paginatedData.length / perPage) ||
+                Math.ceil(paginatedData.length / perPage) === 0
+              }
               className={`p-3 rounded-xl font-semibold transition-all duration-300 ${
-                page === totalPages
+                page === Math.ceil(paginatedData.length / perPage) ||
+                Math.ceil(paginatedData.length / perPage) === 0
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "glow-button bg-blue-600 hover:bg-blue-700 text-white hover:scale-105 relative overflow-hidden"
               }`}
