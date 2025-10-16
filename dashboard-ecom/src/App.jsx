@@ -17,6 +17,7 @@ import RevenueStatistics from "./components/RevenueStatistics";
 import PetStatistics from "./components/PetStatistics";
 import Dashboard from "./components/Dashboard";
 import ArticleManager from "./components/ArticleManager";
+import PromotionManagement from "./components/promotions/PromotionManagement";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -76,6 +77,9 @@ function App() {
             onBack={() => setCurrentPage("transactions")}
           />
         );
+
+      case "promotions":
+        return <PromotionManagement />;
 
       case "users":
         return <AllUsers />;
